@@ -4,9 +4,19 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width">
         <title>Peer-to-Peer Cue System --- Reciever</title>
+        <style>
+
+        #destinationVideo {
+            width: 500px;
+            height: 375px;
+            background-color: #666;
+        }
+
+        </style>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
+        <h1>Shoot Me (Photographer)</h1>
         <table class="display">
             <tr>
                 <td class="title">Status:</td>
@@ -26,6 +36,8 @@
                 <td><div id="status" class="status"></div></td>
                 <td><div class="message" id="message"></div></td>
             </tr>
+
+            <!--
             <tr>
                 <td class="display-box standby" id="standby"><h2>Standby</h2></td>
                 <td class="display-box hidden" id="go"><h2>Go</h2></td>
@@ -33,10 +45,18 @@
             <tr>
                 <td class="display-box hidden" id="fade"><h2>Fade</h2></td>
                 <td class="display-box hidden" id="off"><h2>All Off</h2></td>
-            </tr>
+            </tr> -->
         </table>
 
-        <script src="https://cdn.jsdelivr.net/npm/peerjs@1.2.0/dist/peerjs.min.js"></script>
+    
+
+        <video autoplay  id="destinationVideo">
+            
+
+            Your browser does not support the video tag.
+        </video>
+
+        <script src="./peerjs.min.js"></script>
         <script type="text/javascript">
             (function () {
 
@@ -55,6 +75,15 @@
                 var sendButton = document.getElementById("sendButton");
                 var clearMsgsButton = document.getElementById("clearMsgsButton");
 
+                // media connection and incoming stream 
+                var mediaConnection;
+                var destinationStream;
+                var destinationVideo = document.getElementById("destinationVideo"); 
+
+                var thisPeerId = "d41a1865-4902-4aae-8047-62b3b658cbbf";
+                //var thisPeerId = null;
+
+
                 /**
                  * Create the Peer object for our end of the connection.
                  *
@@ -62,9 +91,16 @@
                  * peer object.
                  */
                  function initialize() {
+
+                    destinationVideo.focus();
+
                     // Create own peer object with connection to shared PeerJS server
-                    peer = new Peer(null, {
-                        debug: 2
+                    peer = new Peer(thisPeerId, {
+
+                        debug: 3,
+                        host: "localhost",
+                        port: 9000,
+                        path: "myapp"
                     });
 
                     peer.on('open', function (id) {
@@ -80,6 +116,26 @@
                         recvId.innerHTML = "ID: " + peer.id;
                         status.innerHTML = "Awaiting connection...";
                     });
+
+                    peer.on('call', function (connection) {
+                        mediaConnection = connection;
+
+                        mediaConnection.on('stream', function(stream) {
+                            console.log("!!!!!!!!!!!!!!!!! streaming yo");
+                            destinationVideo.srcObject = stream;
+                             console.log("######### streaming yo");
+                             destinationVideo.play();
+                        });
+
+                        mediaConnection.answer();
+
+                        console.log("media connn*********************************");
+                        console.log(mediaConnection);
+                        console.log("*********************************");
+
+
+                    });
+
                     peer.on('connection', function (c) {
                         // Allow only a single connection
                         if (conn && conn.open) {

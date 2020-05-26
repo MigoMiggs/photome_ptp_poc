@@ -5,10 +5,24 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width">
         <title>Peer-to-Peer Cue System --- Sender</title>
+        <style>
+
+		#camVideo {
+			width: 500px;
+			height: 375px;
+			background-color: #666;
+		}
+
+		#sourceVideo {
+			width: 500px;
+			height: 375px;
+			background-color: #666;
+		}
+		</style>
         <link rel="stylesheet" href="style.css">
     </head>
     <body>
-        <h1>Peer-to-Peer Cue System --- Sender</h1>
+        <h1>Shoot Me - Subject to be Photographed</h1>
 
         <table class="control">
             <tr>
@@ -47,9 +61,35 @@
                     <button type="button" class="control-button" id="offButton">Off</button>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <button type="button" class="control-button" id="camButton">Get Camera Stream</button>
+                </td>
+                <td>
+                    <button type="button" class="control-button" id="streamButton">Call Peer with stream</button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button type="button" class="control-button" id="photoButton">Take Photo</button>
+                </td>
+                
+            </tr>
         </table>
+        <video autoplay id="camVideo" >
+  			
+		</video>
+        <video autoplay id="sourceVideo">
+  			<!--<source src="test.mp4" type="video/mp4">
 
-        <script src="https://cdn.jsdelivr.net/npm/peerjs@1.2.0/dist/peerjs.min.js"></script>
+			Your browser does not support the video tag.-->
+		</video>
+		<p></p>
+
+		<canvas id="canvas">
+  		</canvas>
+
+        <script src="./peerjs.min.js"></script>
         <script type="text/javascript">
             (function () {
 
@@ -69,6 +109,46 @@
                 var connectButton = document.getElementById("connect-button");
                 var cueString = "<span class=\"cueMsg\">Cue: </span>";
 
+                // video variable that will hold the video to extract stream from
+                var sourceVideo = document.getElementById("sourceVideo"); 
+                var sourceStream;
+
+                var mediaConnection;
+
+                var peerIdToCall = "d41a1865-4902-4aae-8047-62b3b658cbbf";
+
+                // canvas for photo taking
+                var canvas = document.getElementById('canvas');
+
+                sourceVideo.onplay = function() {
+                	console.log("**************************************");
+                	sourceStream = sourceVideo.captureStream();
+					console.log(sourceStream); 
+
+					mediaConnection = peer.call(peerIdToCall, sourceStream);
+					console.log("**************************************");
+					console.log(mediaConnection);
+					console.log("conn **************************************");
+                };
+
+	 			
+                function takePhoto() {
+
+
+                	console.log("********************** PIC")
+				    var context = canvas.getContext('2d');
+				    //if (width && height) {
+				      canvas.width = 500;
+				      canvas.height = 375;
+				      context.drawImage(sourceVideo, 0, 0, 500, 375);
+				    
+				      var data = canvas.toDataURL('image/png');
+				      photo.setAttribute('src', data);
+				   /* } else {
+				      //clearphoto();
+				    }*/
+				  }
+             
                 /**
                  * Create the Peer object for our end of the connection.
                  *
@@ -76,9 +156,14 @@
                  * peer object.
                  */
                 function initialize() {
+
+
                     // Create own peer object with connection to shared PeerJS server
                     peer = new Peer(null, {
-                        debug: 2
+                        debug: 3,
+                        host: "localhost",
+                        port: 9000,
+                        path: "myapp"
                     });
 
                     peer.on('open', function (id) {
@@ -148,6 +233,10 @@
                     // Handle incoming data (messages only since this is the signal sender)
                     conn.on('data', function (data) {
                         addMessage("<span class=\"peerMsg\">Peer:</span> " + data);
+
+                        if (data == "click")
+                        	takePhoto();
+
                     });
                     conn.on('close', function () {
                         status.innerHTML = "Connection closed";
@@ -197,6 +286,52 @@
                 offButton.addEventListener('click', function () {
                     signal("Off");
                 });
+
+                
+
+                photoButton.addEventListener('click', function () {
+                    takePhoto();
+                });
+
+
+                /* Get Camera stream */
+                camButton.addEventListener('click', function () {
+                	console.log(navigator.mediaDevices);
+
+                    var video = document.querySelector("#camVideo");
+
+					if (navigator.mediaDevices.getUserMedia) {
+					  navigator.mediaDevices.getUserMedia({ video: true })
+					    .then(function (stream) {
+					      video.srcObject = stream;
+					    })
+					    .catch(function (err0r) {
+					      console.log("Something went wrong!");
+					    });
+					}
+                });
+
+                /* Start streaming to destination user */
+                streamButton.addEventListener('click', function () {
+                    
+                    var video = document.querySelector("#camVideo");
+
+
+					sourceVideo.srcObject = video.captureStream();
+
+					console.log("cap **************************************");
+                	sourceStream = sourceVideo.captureStream();
+					console.log(sourceStream); 
+
+					mediaConnection = peer.call(peerIdToCall, sourceStream);
+					console.log("**************************************");
+					console.log(mediaConnection);
+					console.log("conn **************************************");
+                });
+
+
+
+
 
                 function addMessage(msg) {
                     var now = new Date();
